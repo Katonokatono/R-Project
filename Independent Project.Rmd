@@ -1,0 +1,146 @@
+---
+title: "Independent Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+install.packages('randomForest')
+install.packages('cowplot')
+install.packages('parallel')
+install.packages('foreach')
+install.packages('doParallel')
+install.packages('e1071', dependencies=TRUE)
+```
+#### Ill import the necessary libraries.
+```{r}
+library(doParallel)
+library(parallel)
+library(randomForest)
+library(ggplot2)
+library(cowplot)
+library(magrittr)
+library(caret)
+library(ggcorrplot)
+library(ggExtra)
+theme_set(theme_classic())
+options(warn = -1)
+```
+
+
+#### Ill first import the dataset and display the head of the dataset
+```{r}
+greg <- read.csv('http://bit.ly/IPAdvertisingData')
+head(greg)
+```
+#### Ill then display the tail of the dataset
+```{r}
+  tail(greg)
+```
+#### I'll then check the rows of the dataset
+```{r}
+rownames(greg, do.NULL = TRUE, prefix = "row")
+
+```
+#### Ill then check the columns of the dataset
+```{r}
+colnames(greg, do.NULL = TRUE, prefix = "col")
+```
+#### I'll then check for missing values in the dataset
+```{r}
+sum(is.na(greg))
+```
+The output shows no missing values after summation
+
+#### I'll then check for duplicates
+```{r}
+sum(duplicated(greg))
+```
+The output shows no duplicates.
+
+## UNIVARIATIVE ANALYSIS
+
+### Ill check for outliers in the dataset
+```{r}
+boxplot(greg)
+```
+Their is presence of outliers,ill not drop them
+
+
+
+
+
+
+#### Ill then show distribution of age 
+```{r}
+hist(greg$Age)
+```
+
+
+#### Ill then show various distribution in the
+
+#### dataset like income,gender,etc
+
+```{r}
+hist(greg$Male)
+```
+
+
+#### Ill then distribution of income in the dataset
+
+```{r}
+hist(greg$Daily.Time.Spent.on.Site)
+```
+## Bivariate Analysis
+
+
+#### Ill then use the plot_grid() function which  provides a simple 
+
+#### interface for arranging plots into a grid and adding labels to them.
+
+```{r}
+library(ggplot2)
+plot1 <- ggplot(greg, aes(x = Age, y = Daily.Internet.Usage, color = Clicked.on.Ad)) + geom_point(size = 3) +
+  theme(text = element_text(size = 10), axis.text.x = element_text(size = 5),axis.text.y = element_text(size = 5))
+plot_grid(plot1)
+```
+```{r}
+plot2 <- ggplot(greg, aes(x = Daily.Time.Spent.on.Site, y=Daily.Internet.Usage, color=Clicked.on.Ad)) + geom_point(size=3)+
+  theme(text = element_text(size=10) ,axis.text.x = element_text(size = 5),axis.text.y = element_text(size = 5))
+plot_grid(plot2)
+```
+```{r}
+plot3 <- ggplot(greg, aes(x = Age, y = Area.Income, color=Clicked.on.Ad)) + geom_point(size=3)+
+  theme(text = element_text(size=10) ,axis.text.x = element_text(size = 5),axis.text.y = element_text(size = 5))
+plot_grid(plot3)
+```
+```{r}
+
+plot4 <- ggplot(greg, aes(x = Area.Income, y = Daily.Internet.Usage, color = Clicked.on.Ad)) + geom_point(size=3)+
+  theme(text = element_text(size=10) ,axis.text.x = element_text(size = 5),axis.text.y = element_text(size = 5))
+plot_grid(plot4)
+```
+## Modelling
+
+##### I'll first split the dataset into train and test set
+```{r}
+greg$Clicked.on.Ad = as.factor(greg$Clicked.on.Ad)
+training1 <- createDataPartition(y = greg$Clicked.on.Ad, p = .75, list = FALSE)
+```
+```{r}
+training <- greg[training1,]
+testing  <- greg[-training1,]
+```
+```{r}
+cluster <- makeCluster(detectCores() - 1) 
+registerDoParallel(cluster)
+controlknn <- trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = TRUE)
+KNNall <- train(Clicked.on.Ad ~ .,data = training, method = "knn",trControl = controlknn,preProc = c("center", "scale"),tuneLength = 10)
+
+```
+```{r}
+KNNall
+```
+
